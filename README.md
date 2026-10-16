@@ -103,7 +103,8 @@ Before setting up the project locally or in production, ensure you have:
 3. **Configure Authorized Domains**:
    - Under **Authentication > Settings > Authorized domains**, ensure:
      - `localhost`
-     - Your production Netlify domain (e.g., `hb-plus-app.netlify.app`)
+     - Production domain: `hbplus-login.netlify.app`
+     - *(Optional)*: `netlify.app`
 4. **Create Cloud Firestore**:
    - Navigate to **Build > Firestore Database**.
    - Click **Create Database** in Production mode.
@@ -388,33 +389,9 @@ npm run typecheck
 
 ## 11. Netlify Deployment
 
-The application is fully configured for static export deployment to Netlify:
+The application is deployed and live on Netlify:
 
-### Build Command & Publish Dir
-
-- **Build Command**: `npm run build:web` (`npx expo export -p web`)
-- **Publish Directory**: `dist`
-- **SPA Fallback Rule** (configured in `netlify.toml`):
-  ```toml
-  [[redirects]]
-    from = "/*"
-    to = "/index.html"
-    status = 200
-  ```
-
----
-
-### Steps to Deploy:
-
-1. **Connect Repository**:
-   - Push repository to GitHub/GitLab.
-   - Link repo in [Netlify Dashboard](https://app.netlify.com/).
-2. **Set Environment Variables in Netlify**:
-   - Navigate to **Site configuration > Environment variables**.
-   - Add all `EXPO_PUBLIC_*` variables from `.env.example`.
-3. **Add Netlify Domain to Firebase Authorized Domains**:
-   - Once Netlify provides your live site URL (e.g. `hb-plus-portal.netlify.app`), go to **Firebase Console > Authentication > Settings > Authorized domains**.
-   - Click **Add domain** and enter your Netlify domain.
+🔗 **Live Production URL**: <a href="https://hbplus-login.netlify.app" target="_blank" rel="noopener noreferrer">https://hbplus-login.netlify.app</a>
 
 ---
 
