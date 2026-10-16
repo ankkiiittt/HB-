@@ -61,8 +61,23 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
 export function useAuth(): AuthContextValue {
   const context = useContext(AuthContext);
+  const store = useAuthStore();
+
   if (!context) {
-    throw new Error('useAuth must be used within an AuthProvider');
+    return {
+      user: store.user,
+      firebaseUser: store.firebaseUser,
+      isLoading: store.isLoading,
+      isRestoring: store.isRestoring,
+      error: store.error,
+      signIn: store.signIn,
+      signOut: store.signOut,
+      clearError: store.clearError,
+      setError: store.setError,
+      intendedDestination: store.intendedDestination,
+      setIntendedDestination: store.setIntendedDestination,
+    };
   }
+
   return context;
 }
