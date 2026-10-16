@@ -18,7 +18,7 @@ interface AuthStoreState {
   setError: (error: string | null) => void;
   clearError: () => void;
   setIntendedDestination: (path: string | null) => void;
-  signIn: () => Promise<boolean>;
+  signIn: (loginHint?: string) => Promise<boolean>;
   signOut: () => Promise<void>;
   validateAndSyncSession: (fbUser: FirebaseUser | null) => Promise<boolean>;
 }
@@ -99,10 +99,10 @@ export const useAuthStore = create<AuthStoreState>((set, get) => ({
     }
   },
 
-  signIn: async (): Promise<boolean> => {
+  signIn: async (loginHint?: string): Promise<boolean> => {
     set({ isLoading: true, error: null });
     try {
-      const fbUser = await googleAuthService.signInWithGoogle();
+      const fbUser = await googleAuthService.signInWithGoogle(loginHint);
       const success = await get().validateAndSyncSession(fbUser);
       return success;
     } catch (err: unknown) {

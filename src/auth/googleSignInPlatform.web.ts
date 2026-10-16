@@ -10,11 +10,15 @@ import { auth } from '../services/firebase';
 import { getAllowedDomain } from './domain';
 import type { GoogleAuthService } from './googleSignIn';
 
-function createGoogleProvider(): GoogleAuthProvider {
+function createGoogleProvider(loginHint?: string): GoogleAuthProvider {
   const provider = new GoogleAuthProvider();
   const customParams: Record<string, string> = {
     prompt: 'select_account',
   };
+
+  if (loginHint) {
+    customParams.login_hint = loginHint;
+  }
 
   // Only pass Google's 'hd' parameter if explicitly enabled,
   // allowing developers and testers to choose or type any Google account.
@@ -39,8 +43,8 @@ function isMobileWeb(): boolean {
 }
 
 export const googleAuthService: GoogleAuthService = {
-  async signInWithGoogle(): Promise<FirebaseUser> {
-    const provider = createGoogleProvider();
+  async signInWithGoogle(loginHint?: string): Promise<FirebaseUser> {
+    const provider = createGoogleProvider(loginHint);
 
     // Check if there is a pending redirect result first
     try {

@@ -10,7 +10,7 @@ interface AuthContextValue {
   isLoading: boolean;
   isRestoring: boolean;
   error: string | null;
-  signIn: () => Promise<boolean>;
+  signIn: (loginHint?: string) => Promise<boolean>;
   signOut: () => Promise<void>;
   clearError: () => void;
   setError: (error: string | null) => void;

@@ -20,7 +20,7 @@ const GOOGLE_DISCOVERY: AuthSession.DiscoveryDocument = {
 };
 
 export const googleAuthService: GoogleAuthService = {
-  async signInWithGoogle(): Promise<FirebaseUser> {
+  async signInWithGoogle(loginHint?: string): Promise<FirebaseUser> {
     const clientId =
       process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID ||
       process.env.EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID ||
@@ -35,6 +35,10 @@ export const googleAuthService: GoogleAuthService = {
     const extraParams: Record<string, string> = {
       prompt: 'select_account',
     };
+
+    if (loginHint) {
+      extraParams.login_hint = loginHint;
+    }
 
     if (process.env.EXPO_PUBLIC_USE_HD_HINT === 'true') {
       extraParams.hd = getAllowedDomain();

@@ -1,6 +1,6 @@
-import React from 'react';
-import { View, Text, StyleSheet, Platform } from 'react-native';
-import { useAuth, getAllowedDomain } from '../src/auth';
+import React, { useState } from 'react';
+import { View, Text, TextInput, StyleSheet, Platform } from 'react-native';
+import { useAuth, getAllowedDomain, ACCESS_RESTRICTED_MESSAGE } from '../src/auth';
 import { useAppTheme } from '../src/theme';
 import { ScreenContainer } from '../src/components/ScreenContainer';
 import { Card } from '../src/components/Card';
@@ -8,16 +8,45 @@ import { Button } from '../src/components/Button';
 import { ErrorBanner } from '../src/components/ErrorBanner';
 
 export default function LoginScreen() {
-  const { signIn, isLoading, error, clearError } = useAuth();
-  const { colors, spacing, typography, radii } = useAppTheme();
+  const { signIn, isLoading, error, setError, clearError } = useAuth();
+  const { colors, spacing, typography, radii, isDark } = useAppTheme();
   const allowedDomain = getAllowedDomain();
 
-  const handleSignIn = async () => {
+  const [inputEmail, setInputEmail] = useState('');
+  const [isInputFocused, setIsInputFocused] = useState(false);
+
+  // Validates the email domain BEFORE ever opening Google OAuth or asking for password
+  const handleEmailSubmit = async () => {
+    clearError();
+    const cleaned = inputEmail.trim().toLowerCase();
+
+    if (!cleaned) {
+      setError('Please enter your official work email address.');
+      return;
+    }
+
+    const atIndex = cleaned.indexOf('@');
+    const lastAtIndex = cleaned.lastIndexOf('@');
+
+    // Strict domain check: must contain exactly one @ and match allowedDomain
+    if (atIndex <= 0 || atIndex !== lastAtIndex || cleaned.substring(atIndex + 1) !== allowedDomain) {
+      // Rejects immediately on the client - password page will NEVER be opened!
+      setError(ACCESS_RESTRICTED_MESSAGE);
+      return;
+    }
+
+    // Domain matches allowedDomain! Proceed to Google OAuth with email pre-filled
+    await signIn(cleaned);
+  };
+
+  // Direct one-click Google Sign-In
+  const handleDirectGoogleSignIn = async () => {
+    clearError();
     await signIn();
   };
 
   return (
-    <ScreenContainer scrollable centerContent maxWidth={440}>
+    <ScreenContainer scrollable centerContent maxWidth={460}>
       <Card style={styles.card}>
         {/* App Wordmark & Branding */}
         <View style={styles.brandContainer}>
@@ -57,18 +86,82 @@ export default function LoginScreen() {
           <ErrorBanner
             message={error}
             onDismiss={clearError}
-            title={error.includes('Access restricted') ? 'Access Denied' : 'Sign-In Error'}
+            title="Access Restricted"
           />
         )}
 
-        {/* Google OAuth Action Button */}
-        <View style={[styles.actionContainer, { marginTop: spacing.lg }]}>
+        {/* Official Email Input Form (Validates domain BEFORE password) */}
+        <View style={[styles.formContainer, { marginTop: spacing.lg }]}>
+          <Text
+            style={[
+              styles.inputLabel,
+              typography.bodyBold,
+              { color: colors.textPrimary, marginBottom: spacing.xs },
+            ]}
+          >
+            Official Workspace Email
+          </Text>
+
+          <TextInput
+            style={[
+              styles.textInput,
+              {
+                backgroundColor: colors.surfaceSubtle,
+                borderColor: isInputFocused ? colors.accent : colors.border,
+                borderRadius: radii.md,
+                color: colors.textPrimary,
+                paddingHorizontal: spacing.md,
+                paddingVertical: spacing.md,
+              },
+              Platform.OS === 'web' &&
+                isInputFocused && {
+                  outlineColor: colors.accent,
+                  outlineWidth: 2,
+                  outlineStyle: 'solid',
+                } as any,
+            ]}
+            placeholder={`name@${allowedDomain}`}
+            placeholderTextColor={colors.textMuted}
+            value={inputEmail}
+            onChangeText={(text) => {
+              setInputEmail(text);
+              if (error) clearError();
+            }}
+            onFocus={() => setIsInputFocused(true)}
+            onBlur={() => setIsInputFocused(false)}
+            autoCapitalize="none"
+            autoCorrect={false}
+            keyboardType="email-address"
+            returnKeyType="go"
+            onSubmitEditing={handleEmailSubmit}
+          />
+
+          <Button
+            title="Next"
+            variant="primary"
+            loading={isLoading}
+            onPress={handleEmailSubmit}
+            style={{ marginTop: spacing.md }}
+          />
+        </View>
+
+        {/* Divider */}
+        <View style={[styles.dividerRow, { marginVertical: spacing.lg }]}>
+          <View style={[styles.dividerLine, { backgroundColor: colors.border }]} />
+          <Text style={[styles.dividerText, typography.caption, { color: colors.textMuted }]}>
+            OR
+          </Text>
+          <View style={[styles.dividerLine, { backgroundColor: colors.border }]} />
+        </View>
+
+        {/* Direct Google OAuth Action Button */}
+        <View style={styles.actionContainer}>
           <Button
             title="Sign in with Google"
             variant="google"
             loading={isLoading}
-            onPress={handleSignIn}
-            accessibilityLabel="Sign in with your official Google account"
+            onPress={handleDirectGoogleSignIn}
+            accessibilityLabel="Sign in with your Google account"
             testID="google-signin-button"
             style={styles.googleButton}
           />
@@ -91,7 +184,7 @@ export default function LoginScreen() {
             <Text style={{ fontWeight: '700', color: colors.textSecondary }}>
               @{allowedDomain}
             </Text>{' '}
-            Google accounts are authorized. External accounts will be automatically rejected.
+            accounts are authorized. External accounts will be rejected.
           </Text>
         </View>
 
@@ -147,8 +240,34 @@ const styles = StyleSheet.create({
   },
   headline: {
     textAlign: 'center',
-    maxWidth: 320,
+    maxWidth: 340,
     lineHeight: 22,
+  },
+  formContainer: {
+    width: '100%',
+  },
+  inputLabel: {
+    fontSize: 13,
+  },
+  textInput: {
+    borderWidth: 1,
+    fontSize: 15,
+    minHeight: 48,
+    width: '100%',
+  },
+  dividerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    width: '100%',
+  },
+  dividerLine: {
+    flex: 1,
+    height: 1,
+  },
+  dividerText: {
+    paddingHorizontal: 12,
+    fontWeight: '700',
+    letterSpacing: 1,
   },
   actionContainer: {
     width: '100%',
