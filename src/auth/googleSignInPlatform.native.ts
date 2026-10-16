@@ -32,16 +32,20 @@ export const googleAuthService: GoogleAuthService = {
       path: 'auth/callback',
     });
 
+    const extraParams: Record<string, string> = {
+      prompt: 'select_account',
+    };
+
+    if (process.env.EXPO_PUBLIC_USE_HD_HINT === 'true') {
+      extraParams.hd = getAllowedDomain();
+    }
+
     const request = new AuthSession.AuthRequest({
       clientId,
       scopes: ['openid', 'profile', 'email'],
       responseType: AuthSession.ResponseType.IdToken,
       redirectUri,
-      extraParams: {
-        // UX Hint: Google OAuth hosted domain parameter (defense in depth layer 1)
-        hd: getAllowedDomain(),
-        prompt: 'select_account',
-      },
+      extraParams,
     });
 
     const result = await request.promptAsync(GOOGLE_DISCOVERY);

@@ -12,11 +12,17 @@ import type { GoogleAuthService } from './googleSignIn';
 
 function createGoogleProvider(): GoogleAuthProvider {
   const provider = new GoogleAuthProvider();
-  // UX Hint: Google OAuth hosted domain parameter (defense in depth layer 1)
-  provider.setCustomParameters({
-    hd: getAllowedDomain(),
+  const customParams: Record<string, string> = {
     prompt: 'select_account',
-  });
+  };
+
+  // Only pass Google's 'hd' parameter if explicitly enabled,
+  // allowing developers and testers to choose or type any Google account.
+  if (process.env.EXPO_PUBLIC_USE_HD_HINT === 'true') {
+    customParams.hd = getAllowedDomain();
+  }
+
+  provider.setCustomParameters(customParams);
   provider.addScope('email');
   provider.addScope('profile');
   return provider;
