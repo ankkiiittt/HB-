@@ -1,0 +1,61 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Helper functions for defense-in-depth authentication & domain verification
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isEmailVerified() {
+      return request.auth.token.email_verified == true;
+    }
+
+    function isDomainAllowed() {
+      // Strictly enforces exact @hbplus.fit domain.
+      // Rejects lookalikes (evil-hbplus.fit, hbplus.fit.com) and unverified emails.
+      return request.auth.token.email.matches('^[a-zA-Z0-9._%+-]+@hbplus\\.fit$');
+    }
+
+    function isAuthorizedHBUser() {
+      return isAuthenticated() && isEmailVerified() && isDomainAllowed();
+    }
+
+    function getUserDoc(uid) {
+      return get(/databases/$(database)/documents/users/$(uid));
+    }
+
+    function isAdmin() {
+      return isAuthorizedHBUser() && getUserDoc(request.auth.uid).data.role == 'admin';
+    }
+
+    // Default deny for all unmatched collections
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // User profiles collection: users/{userId}
+    match /users/{userId} {
+      // A user can read their own profile; admins can read all profiles (for /admin directory)
+      allow read: if isAuthorizedHBUser() && (request.auth.uid == userId || isAdmin());
+
+      // Create: user can create their own document on first login, strictly with role == 'user'
+      allow create: if isAuthorizedHBUser()
+                    && request.auth.uid == userId
+                    && request.resource.data.uid == userId
+                    && request.resource.data.email == request.auth.token.email
+                    && request.resource.data.role == 'user';
+
+      // Update: user can update displayName, photoURL, lastLoginAt, but CANNOT modify role or createdAt
+      allow update: if isAuthorizedHBUser()
+                    && request.auth.uid == userId
+                    && request.resource.data.role == resource.data.role
+                    && request.resource.data.createdAt == resource.data.createdAt
+                    && request.resource.data.uid == resource.data.uid
+                    && request.resource.data.email == resource.data.email;
+
+      // Delete: clients cannot delete accounts directly; requires admin or backend script
+      allow delete: if isAdmin();
+    }
+  }
+}
